@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <style>
+      #map {
+        width: 100%;
+        height: 400px;
+        background-color: grey;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>My Google Maps Demo</h3>
+    <button onclick="getLocation()">Get location</button>
+    <button onclick="initMap()">Reload Map</button>
+    <div id="map"></div>
+    <script>
+      var latitude = 23;
+      var longitude = 72; 
+
+      function getLocation() {
+        setInterval(function() {
+          var xhttp = new XMLHttpRequest();
+          xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+              latitude = JSON.parse(this.responseText).latitude;
+              longitude = JSON.parse(this.responseText).longitude;
+              console.log(latitude);
+              console.log(longitude);
+            }
+          };
+          xhttp.open("GET", "https://mysterious-forest-29147.herokuapp.com/getLocation", true);
+          xhttp.send();
+        }
+        , 2000);
+      }
+      var marker;
+      var map;
+      var lineCoords = [];
+
+      var pnChannel = "map-channel";
+
+        function initMap(){
+          var pubnub = new PubNub({
+            publishKey:   'pub-c-66a7fd96-9181-49cd-adb5-24031a3c8aed',
+            subscribeKey: 'sub-c-408b314a-3e54-11e8-ab9b-2eb7c2998ea5'
+          });
+            var uluru={lat: latitude ,lng:longitude };
+            map= new google.maps.Map(document.getElementById('map'),{
+                zoom: 9, 
+                center:uluru
+            });
+            
+            pubnub.subscribe({channels: [pnChannel]});
+              pubnub.addListener({message:redraw});
+            setInterval(function(){
+              uluru={lat: latitude ,lng:longitude };
+              marker=new google.maps.Marker({
+                position: uluru,
+                map:map
+                
+            });
+                
+                pubnub.publish({channel:pnChannel, message:circlePoint()});
+            },2000);
+
+          }
+          function circlePoint() {
+              return { lat:latitude, lng:longitude };
+          };
+
+              var redraw = function(payload) {
+                      var SerialPort=require('serialport')
+
+                      lat = payload.message.lat;
+                      lng = payload.message.lng;
+                      map.setCenter({lat:lat, lng:lng, alt:0});
+                      marker.setPosition({lat:lat, lng:lng, alt:0});
+
+                        lineCoords.push(new google.maps.LatLng(lat, lng));
+                          var lineCoordinatesPath = new google.maps.Polyline({
+                            path: lineCoords,
+                            geodesic: true,
+                            strokeColor: '#2E10FF'
+                          });
+                          lineCoordinatesPath.setMap(map);
+                        };
+            
+    </script>
+        <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.19.0.min.js"></script>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=
+        AIzaSyA_mq7rI4r4FEclMgHQfU1I-MLXLvRoh_Q
+        &callback=initMap">
+        </script>
+      
+  </body>
+</html>
+
